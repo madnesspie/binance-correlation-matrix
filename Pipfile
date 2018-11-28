@@ -6,6 +6,8 @@ name = "pypi"
 [packages]
 pandas = "*"
 matplotlib = "*"
+jupyter = "*"
+tables = "*"
 
 [dev-packages]
 pylint = "*"

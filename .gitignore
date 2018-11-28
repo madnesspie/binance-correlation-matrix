@@ -108,3 +108,6 @@ venv.bak/
 
 # project data
 data/*
+
+# trash
+spb.ipynb

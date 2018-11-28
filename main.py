@@ -1,47 +1,65 @@
 from os import listdir
+from os.path import basename, splitext
 from itertools import permutations
+from multiprocessing import Pool
 
-from pandas import read_csv, concat
+from pandas import DataFrame, read_csv, concat
 from matplotlib import pyplot as plt
 
-from logger import log, get_logger
+# from logger import log, get_logger
+# logger = get_logger(__name__)
 
-PATH = 'data/'
+PATH = 'data/csv/'
 CURRENCIES = ['btc', 'eth', 'bnb', 'xrp', 'xlm', 'ada', 'ltc', 'dash', 'xmr', 
               'zec', 'etc', 'neo', 'doge', 'mkr', 'omg', 'zrx', 'dcr', 'qtum']
 
-logger = get_logger(__name__)
 
 
 def get_tickers(currencies=CURRENCIES):
     return [''.join(pair) for pair in permutations(currencies, 2)]
 
 
+def tickername(file):
+    return splitext(basename(file))[0]
+
+
 def filter_tickers(tickers):
-    return filter(lambda f: f.replace('.csv', '') in tickers, listdir(PATH))
+    return filter(lambda file: tickername(file) in tickers, listdir(PATH))
+
+
+def downsample(dataframe):
+    ticker = dataframe.columns[-1]
+    dataframe[ticker] = dataframe[ticker].resample('H').min()
+    return dataframe.dropna()
+
+
+def pluck_ticker_dataframe(csv):
+    dataframe = read_csv(
+        f"{PATH}/{csv}", index_col=0, usecols=['Date', 'Time', 'Close'],
+        parse_dates=[['Date', 'Time']])
+    return dataframe['Close']
 
 
 def to_dataframe(csv):
-    df = read_csv(
-        f"{PATH}/{csv}", index_col=0, 
-        usecols=['Date', 'Time', 'Close'], parse_dates=[['Date', 'Time']])
-    df['Ticker'] = csv.replace('.csv', '')
-    return df
+    dataframe = pluck_ticker_dataframe(csv)
+    dataframe.name = tickername(csv)
+    return dataframe
 
 
-def resample(df):
-    # df['Open'] = df.Open.resample('H').first()
-    # df['High'] = df.High.resample('H').max()
-    # df['Low'] = df.Low.resample('H').min()
-    # df['Volume'] = df.Volume.resample('H').sum()
-    df['Close'] = df.Close.resample('H').min()
-    return df.dropna()
+def save_hdf(dataframe):
+    ticker = dataframe.name
+    dataframe.to_hdf(
+        f"data/hdf/{ticker}.hdf", key=ticker, mode='w', complib='zlib')
 
 
-def build_df(tickers):
+df = to_dataframe('adabnb.csv')
+save_hdf(df)
+
+
+def build_dataframe(tickers):
     # TODO: remove [:2]
-    dfs = map(to_dataframe, list(tickers)[:2])
-    downsampled_dfs = map(resample, dfs)
+    dfs = map(to_dataframe, list(tickers))
+    downsampled_dfs = map(downsample, dfs)
     return concat(downsampled_dfs)
 
 
@@ -59,25 +77,32 @@ def plot_corr(df, size=10):
     plt.yticks(range(len(corr.columns)), corr.columns)
 
 
-def main():
-    tickers = filter_tickers(get_tickers())
-    df = build_df(tickers)
-    print(df)
+# def wrest_two(df):
+#     pass
 
-    plot_corr(df)
+
+# def build_plots(df):
+#     for part in wrest_two(df):
+#         plot_corr(df)
+#     pass
+
+
+# def main():
+#     tickers = get_tickers()
+#     filtred = filter_tickers(tickers)
     
-    # corr = df.corr()
-    # plt.matshow(corr)
-    plt.show()
+#     df = build_dataframe(filtred)
+#     print(df)
+
+#     plot_corr(df)
+#     # corr = df.corr()
+#     # plt.matshow(corr)
+#     plt.show()
     
-    # if 'adabnb.csv' != ticker:
-    #     continue
-    # df.plot()
+#     # if 'adabnb.csv' != ticker:
+#     #     continue
+#     # df.plot()
 
 
-if __name__ == '__main__':
-    main()
-
-# class ParseTickers:
-#     def __init__(self):
-#         pass 
+# if __name__ == '__main__':
+#     main()
