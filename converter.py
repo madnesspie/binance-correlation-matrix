@@ -7,8 +7,9 @@ from multiprocessing import Pool
 from pandas import read_csv
 
 # Валюты, которые нас интересуют 
-CURRENCIES = ['btc', 'eth', 'bnb', 'xrp', 'xlm', 'ada', 'ltc', 'dash', 'xmr',
-              'zec', 'etc', 'neo', 'doge', 'mkr', 'omg', 'zrx', 'dcr', 'qtum']
+CURRENCIES = [
+    'btc', 'eth', 'bnb', 'usdt', 'xrp', 'xlm', 'ada', 'ltc', 'dash', 'xmr',
+    'zec', 'etc', 'neo', 'doge', 'mkr', 'omg', 'zrx', 'dcr', 'qtum']
 
 
 def get_ticker_names(currencies=CURRENCIES):
