@@ -1,12 +1,11 @@
-from os import listdir
+from os import listdir, remove
 from os.path import basename, splitext
+from glob import glob
 from itertools import permutations
 from multiprocessing import Pool
 
-from pandas import DataFrame, read_csv, concat
-from matplotlib import pyplot as plt
+from pandas import read_csv
 
-PATH = 'data/csv/'
 # Валюты, которые нас интересуют 
 CURRENCIES = ['btc', 'eth', 'bnb', 'xrp', 'xlm', 'ada', 'ltc', 'dash', 'xmr',
               'zec', 'etc', 'neo', 'doge', 'mkr', 'omg', 'zrx', 'dcr', 'qtum']
@@ -17,7 +16,8 @@ def get_ticker_names(currencies=CURRENCIES):
 
 
 def get_csv_files(tickers):
-    return filter(lambda file: tickername(file) in tickers, listdir(PATH))
+    return filter(lambda file: tickername(file) in tickers, 
+                  listdir('data/csv/'))
 
 
 def tickername(file):
@@ -26,7 +26,7 @@ def tickername(file):
 
 def pluck_ticker_dataframe(csv):
     dataframe = read_csv(
-        f"{PATH}/{csv}", index_col=0, usecols=['Date', 'Time', 'Close'],
+        f"data/csv/{csv}", index_col=0, usecols=['Date', 'Time', 'Close'],
         parse_dates=[['Date', 'Time']])
     return dataframe['Close']
 
@@ -48,7 +48,17 @@ def convert(csv):
     save_hdf(dataframe)
 
 
-def run():
-    ticker_names = get_ticker_names()
-    Pool().map(convert, get_csv_files(ticker_names))
+def clean(path):
+    files = [f"{path}{f}" for f in listdir(path)]
+    list(map(remove, files))
 
+
+def run():
+    clean('data/hdf/')
+    ticker_names = get_ticker_names()
+    csv_files = get_csv_files(ticker_names)
+    Pool().map(convert, csv_files)
+
+
+if __name__ == '__main__':
+    run()
